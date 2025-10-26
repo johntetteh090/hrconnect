@@ -94,6 +94,53 @@ const leaveTypes = {
 
 export default function LeavePage() {
   const [filterStatus, setFilterStatus] = React.useState("all")
+  const [sidePanelOpen, setSidePanelOpen] = React.useState(false)
+  const [showSuccessMessage, setShowSuccessMessage] = React.useState<string | null>(null)
+  const [newRequest, setNewRequest] = React.useState({
+    employee: "",
+    type: "vacation",
+    startDate: "",
+    endDate: "",
+    reason: "",
+    days: 0
+  })
+
+  const openSidePanel = () => {
+    setSidePanelOpen(true)
+  }
+
+  const closeSidePanel = () => {
+    setSidePanelOpen(false)
+    // Reset form
+    setNewRequest({
+      employee: "",
+      type: "vacation",
+      startDate: "",
+      endDate: "",
+      reason: "",
+      days: 0
+    })
+  }
+
+  const handleSubmitRequest = () => {
+    // Calculate days between start and end date
+    if (newRequest.startDate && newRequest.endDate) {
+      const start = new Date(newRequest.startDate)
+      const end = new Date(newRequest.endDate)
+      const diffTime = Math.abs(end.getTime() - start.getTime())
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
+      setNewRequest(prev => ({ ...prev, days: diffDays }))
+    }
+
+    // Here you would typically submit to an API
+    console.log("Submitting leave request:", newRequest)
+    
+    setShowSuccessMessage("Leave request submitted successfully!")
+    setTimeout(() => {
+      setShowSuccessMessage(null)
+      closeSidePanel()
+    }, 3000)
+  }
 
   const filteredRequests = leaveRequests.filter((request) => {
     return filterStatus === "all" || request.status === filterStatus
@@ -131,6 +178,16 @@ export default function LeavePage() {
       description="Manage employee leave requests and approvals"
     >
       <div className="space-y-6">
+        {/* Success Message */}
+        {showSuccessMessage && (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+            <div className="flex items-center space-x-2">
+              <IconCheck className="h-5 w-5 text-green-600" />
+              <p className="text-sm font-medium text-green-800">{showSuccessMessage}</p>
+            </div>
+          </div>
+        )}
+
         {/* Header Actions */}
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
           <div className="flex items-center gap-2">
@@ -138,7 +195,7 @@ export default function LeavePage() {
               <IconFilter className="mr-2 h-4 w-4" />
               Filter
             </Button>
-            <Button size="sm">
+            <Button size="sm" onClick={openSidePanel}>
               <IconPlus className="mr-2 h-4 w-4" />
               New Request
             </Button>
@@ -268,6 +325,186 @@ export default function LeavePage() {
             </div>
           </CardContent>
         </Card>
+      </div>
+
+      {/* Side Panel Overlay */}
+      {sidePanelOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 transition-opacity duration-300"
+          onClick={closeSidePanel}
+        />
+      )}
+
+      {/* Side Panel */}
+      <div className={`fixed top-0 right-0 h-full w-96 bg-white shadow-2xl z-50 transform transition-transform duration-300 ${
+        sidePanelOpen ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <div className="h-full flex flex-col">
+          {/* Panel Header */}
+          <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
+            <div className="flex items-center space-x-3">
+              <IconPlus className="h-6 w-6 text-blue-600" />
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">New Leave Request</h3>
+                <p className="text-sm text-gray-600">Submit a new leave request for approval</p>
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={closeSidePanel}
+              className="h-8 w-8 p-0 hover:bg-gray-100 rounded-full"
+            >
+              <IconX className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Panel Content */}
+          <div className="flex-1 overflow-y-auto p-6">
+            <div className="space-y-6">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h4 className="text-sm font-semibold text-blue-900 mb-2">Leave Request Form</h4>
+                <p className="text-sm text-blue-800">Fill out the details below to submit your leave request.</p>
+              </div>
+              
+              <div className="space-y-4">
+                {/* Employee Selection */}
+                <div>
+                  <label className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Employee</label>
+                  <select
+                    value={newRequest.employee}
+                    onChange={(e) => setNewRequest(prev => ({ ...prev, employee: e.target.value }))}
+                    className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Select Employee</option>
+                    <option value="sarah-johnson">Sarah Johnson - Engineering</option>
+                    <option value="mike-chen">Mike Chen - Product</option>
+                    <option value="emily-davis">Emily Davis - HR</option>
+                    <option value="john-smith">John Smith - Marketing</option>
+                  </select>
+                </div>
+
+                {/* Leave Type */}
+                <div>
+                  <label className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Leave Type</label>
+                  <select
+                    value={newRequest.type}
+                    onChange={(e) => setNewRequest(prev => ({ ...prev, type: e.target.value }))}
+                    className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="vacation">Vacation</option>
+                    <option value="sick">Sick Leave</option>
+                    <option value="personal">Personal</option>
+                    <option value="maternity">Maternity</option>
+                    <option value="paternity">Paternity</option>
+                    <option value="bereavement">Bereavement</option>
+                  </select>
+                </div>
+
+                {/* Date Range */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Start Date</label>
+                    <input
+                      type="date"
+                      value={newRequest.startDate}
+                      min={new Date().toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        const selectedDate = e.target.value
+                        setNewRequest(prev => ({ 
+                          ...prev, 
+                          startDate: selectedDate,
+                          // Reset end date if it's before the new start date
+                          endDate: prev.endDate && selectedDate > prev.endDate ? "" : prev.endDate
+                        }))
+                      }}
+                      className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-semibold text-gray-900 uppercase tracking-wide">End Date</label>
+                    <input
+                      type="date"
+                      value={newRequest.endDate}
+                      min={newRequest.startDate || new Date().toISOString().split('T')[0]}
+                      onChange={(e) => setNewRequest(prev => ({ ...prev, endDate: e.target.value }))}
+                      className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+
+                {/* Days Calculation */}
+                {newRequest.startDate && newRequest.endDate && (
+                  <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <h5 className="text-sm font-semibold text-gray-900 mb-2">Leave Duration</h5>
+                    <div className="flex items-center space-x-2">
+                      <IconCalendar className="h-4 w-4 text-gray-500" />
+                      <span className="text-sm text-gray-600">
+                        {(() => {
+                          const start = new Date(newRequest.startDate)
+                          const end = new Date(newRequest.endDate)
+                          const diffTime = Math.abs(end.getTime() - start.getTime())
+                          const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1
+                          return `${diffDays} day${diffDays !== 1 ? 's' : ''} requested`
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Reason */}
+                <div>
+                  <label className="text-sm font-semibold text-gray-900 uppercase tracking-wide">Reason</label>
+                  <textarea
+                    value={newRequest.reason}
+                    onChange={(e) => setNewRequest(prev => ({ ...prev, reason: e.target.value }))}
+                    placeholder="Please provide a reason for your leave request..."
+                    rows={4}
+                    className="w-full mt-2 px-3 py-2 border border-gray-300 rounded-md bg-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                  />
+                </div>
+
+                {/* Leave Type Info */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <h5 className="text-sm font-semibold text-gray-900 mb-2">Leave Type Information</h5>
+                  <div className="space-y-2 text-sm text-gray-600">
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline" className="text-xs">
+                        {leaveTypes[newRequest.type as keyof typeof leaveTypes]?.label}
+                      </Badge>
+                      <span>Selected leave type</span>
+                    </div>
+                    <p className="text-xs text-gray-500">
+                      {newRequest.type === 'vacation' && 'Vacation leave for personal time off and relaxation.'}
+                      {newRequest.type === 'sick' && 'Sick leave for medical appointments and illness recovery.'}
+                      {newRequest.type === 'personal' && 'Personal leave for urgent personal matters.'}
+                      {newRequest.type === 'maternity' && 'Maternity leave for new mothers.'}
+                      {newRequest.type === 'paternity' && 'Paternity leave for new fathers.'}
+                      {newRequest.type === 'bereavement' && 'Bereavement leave for family loss.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Panel Footer */}
+          <div className="border-t border-gray-200 p-6 bg-gray-50">
+            <div className="flex space-x-3">
+              <Button 
+                className="flex-1"
+                onClick={handleSubmitRequest}
+                disabled={!newRequest.employee || !newRequest.startDate || !newRequest.endDate || !newRequest.reason}
+              >
+                <IconCheck className="h-4 w-4 mr-2" />
+                Submit Request
+              </Button>
+              <Button variant="outline" onClick={closeSidePanel}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
       </div>
     </MainLayout>
   )
